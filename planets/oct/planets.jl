@@ -3,14 +3,16 @@ using Measures
 
 a = Animation()
 
-const n = 8
+#const n = 8
+const n = 12
 ## const G = 6.6743e-11
 const G = 0.04
 const t = 0.025
+const ϵ = 0.1
 
 dist2(x1, y1, x2, y2) = (x2 - x1)^2 + (y2 - y1)^2
 
-force(m1, m2, x1, y1, x2, y2) = G * m1 * m2 / dist2(x1, y1, x2, y2)
+force(m1, m2, x1, y1, x2, y2) = G * m1 * m2 / (dist2(x1, y1, x2, y2) + ϵ^2)
 
 function dir(x1, y1, x2, y2)
     d = sqrt(dist2(x1, y1, x2, y2))
@@ -45,22 +47,23 @@ end #function
 #vx = 0.5 .* (rand(n) .- 0.5)
 #vy = 0.5 .* (rand(n) .- 0.5)
 
-#ms = [1., 1., 1., 1.]
-#px = [-1/3, 1., 1/3, -1.]
-#py = [1., 1/3, -1., -1/3]
-#vx = [0., -0.2, 0., 0.2]
-#vy = [-0.2, 0., 0.2, 0.]
-
-
 trailx = [Float64[] for _ in 1:n]
 traily = [Float64[] for _ in 1:n]
 
 ms = [1. for i in 1:n]
-px = [-1/3, 1., 1/3, -1., -2/3, 2., 2/3, -2.]
-py = [1., 1/3, -1., -1/3, 2., 2/3, -2., -2/3]
-vx = [0., -0.2, 0., 0.2, 0., -0.2, 0., 0.2]
-vy = [-0.2, 0., 0.2, 0., -0.2, 0., 0.2, 0.]
-for i in 1:400
+px = [-1/3, 1., 1/3, -1.]
+py = [1., 1/3, -1., -1/3]
+vx = [0., -0.2, 0., 0.2]
+vy = [-0.2, 0., 0.2, 0.]
+##px = hcat(px, 2 .* px)
+##py = hcat(py, 2 .* py)
+##vx = hcat(vx, vx)
+##vy = hcat(vy, vy)
+px = hcat(px, 2 .* px, 3 .* px)
+py = hcat(py, 2 .* py, 3 .* py)
+vx = hcat(vx, vx, vx)
+vy = hcat(vy, vy, vy)
+for i in 1:2000
     print("$i ")
     updateVelocity!(ms, px, py, vx, vy)
     updatePosition!(px, py, vx, vy)
@@ -94,4 +97,4 @@ for i in 1:400
     frame(a, plt)
 end
 
-gif(a, "planets.gif", fps = 40)
+gif(a, "planets2.gif", fps = 40)
