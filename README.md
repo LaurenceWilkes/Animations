@@ -8,26 +8,21 @@ A small collection of physics based 2D animations.
 
 - **Planet Sandbox (interactive)**  
   Click to place bodies.
-
   → https://laurencewilkes.github.io/Animations/planets/planetsandbox/index.html
 
 - **3 Body (GIF)**  
   Classic three-body gravitational motion with trails.  
-
   → https://laurencewilkes.github.io/Animations/planets/3body/planets.gif
 
 - **8 Planets (GIF)**  
   An N-body variant with 8 bodies and trails.  
-
   → https://laurencewilkes.github.io/Animations/planets/oct/planets.gif
 
 - **12 Planets (GIF)**  
-
   → https://laurencewilkes.github.io/Animations/planets/oct/planets2.gif
 
 - **DVD (interactive)**  
   Click to place bodies.
-
   → https://laurencewilkes.github.io/Animations/racecar/dvd/index.html
 
 ---
@@ -50,6 +45,7 @@ A small collection of physics based 2D animations.
      (Keyboard: press **C** to clear trails.)
 
 **Notes / implementation details**
+- The direction of the initial speed is random as is the colour of a new particle.
 - Pairwise forces use a softened inverse-square form:  
   `F ∝ (m₁ m₂) / (r² + ε²)`
 - Velocity updates are symmetric: each pair contributes equal and opposite impulses.
