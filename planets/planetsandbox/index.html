@@ -1,0 +1,119 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <style>
+    body { margin: 0; display: grid; place-items: center; height: 100vh; }
+    canvas { border: 2px solid #000; }
+  </style>
+</head>
+<body>
+  <canvas id="c" width="500" height="500"></canvas>
+
+  <script>
+    const canvas = document.getElementById("c");
+    const ctx = canvas.getContext("2d");
+
+    const dots = [];
+//    const SPEED = 0;  
+    const SPEED = 140;  
+    const R = 2;
+    const M = 1;
+
+//    const G = 6.6743e-11
+    const G = 6e5;
+
+    function randColor() {
+      return `hsl(${Math.random() * 360}, 90%, 55%)`;
+    }
+
+    function dist2(d1, d2) {
+      const dx = d2.x - d1.x;
+      const dy = d2.y - d1.y;
+      return dx * dx + dy * dy;
+    }
+
+    function force(d1, d2, e = 10) {
+      return G * d1.m * d2.m / (dist2(d1, d2) + e * e)
+    }
+
+    function updateVelocity(dt) {
+      for (let i = 0; i < dots.length - 1; i++) {
+        let d1 = dots[i];
+        for (let j = i + 1; j < dots.length; j++) {
+          let d2 = dots[j];
+          let f = force(d1, d2);
+          let dist = Math.sqrt(dist2(d1, d2));
+          if (dist < 1e-6) continue;
+          let dx = (d2.x - d1.x) / dist, 
+              dy = (d2.y - d1.y) / dist;
+          d1.vx += dt * dx * f / d1.m;
+          d1.vy += dt * dy * f / d1.m;
+          d2.vx -= dt * dx * f / d2.m;
+          d2.vy -= dt * dy * f / d2.m;
+        }
+      }
+    }
+
+    canvas.addEventListener("click", (e) => {
+      const rect = canvas.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+
+      const a = Math.random() * Math.PI * 2;
+      dots.push({
+        x, y, m: M,
+        px: x, py: y,
+        vx: Math.cos(a) * SPEED,
+        vy: Math.sin(a) * SPEED,
+        color: randColor()
+      });
+    });
+
+    let last = performance.now();
+
+    function step(now) {
+      const dt = (now - last) / 1000;
+      last = now;
+
+      updateVelocity(dt);
+
+      for (let i = 0; i < dots.length; i++) {
+        let d = dots[i];
+
+        d.x += d.vx * dt;
+        d.y += d.vy * dt;
+
+        if (d.x - R < 0) { d.x = R; d.vx *= -1; }
+        if (d.x + R > canvas.width) { d.x = canvas.width - R; d.vx *= -1; }
+        if (d.y - R < 0) { d.y = R; d.vy *= -1; }
+        if (d.y + R > canvas.height) { d.y = canvas.height - R; d.vy *= -1; }
+
+        ctx.beginPath();
+        ctx.arc(d.x, d.y, R, 0, Math.PI * 2);
+        ctx.fillStyle = d.color;
+        ctx.fill();
+
+        ctx.beginPath();
+        ctx.moveTo(d.px, d.py);
+        ctx.lineTo(d.x, d.y);
+        ctx.strokeStyle = d.color;
+        ctx.lineWidth = 5;
+        ctx.stroke();
+
+        d.px = d.x;
+        d.py = d.y;
+      }
+
+      requestAnimationFrame(step);
+    }
+
+    requestAnimationFrame(step);
+
+    // Optional: press "c" to clear trails
+    window.addEventListener("keydown", (e) => {
+      if (e.key.toLowerCase() === "c") ctx.clearRect(0, 0, canvas.width, canvas.height);
+    });
+  </script>
+</body>
+</html>
