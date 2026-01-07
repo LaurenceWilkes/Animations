@@ -5,27 +5,59 @@
   <style>
     body { margin: 0; display: grid; place-items: center; height: 100vh; }
     canvas { border: 2px solid #000; }
+    .controls { display: grid; grid-template-columns: auto auto; gap: 12px 24px; }
+    .controls label { text-align: right; }
+    .controls button { grid-column: 1 / -1; padding: 6px 10px; }
   </style>
 </head>
 <body>
   <canvas id="c" width="500" height="500"></canvas>
+  <div class="controls">
+    <label for="initialSpeed">Initial speed </label>
+    <input id="initialSpeed" type="number" value="0">
+    <label for="gravity">Gravitational constant </label>
+    <input id="gravity" type="number" value="6.6743e-11">
+    <label for="mass">Mass </label>
+    <input id="mass" type="number" value="4e16">
+    <label for="softening">Softening factor </label>
+    <input id="softening" type="number" value="70">
+    <button id="toggleWalls" type="button">Add walls</button>
+  </div>
 
   <script>
     const canvas = document.getElementById("c");
     const ctx = canvas.getContext("2d");
 
     const dots = [];
-//    const SPEED = 0;  
-    const SPEED = 140;  
     const R = 2;
-    const M = 1;
-
-//    const G = 6.6743e-11
-    const G = 6e5;
 
     function randColor() {
       return `hsl(${Math.random() * 360}, 90%, 55%)`;
     }
+
+    function getSpeed() {
+      return parseFloat(document.getElementById("initialSpeed").value) || 0;
+    }
+
+    function getGravity() {
+      return parseFloat(document.getElementById("gravity").value) || 1;
+    }
+
+    function getMass() {
+      return parseFloat(document.getElementById("mass").value) || 1;
+    }
+
+    function getSoftening() {
+      return parseFloat(document.getElementById("softening").value) || 1;
+    }
+
+    let wallsOn = false;
+
+    const toggleBtn = document.getElementById("toggleWalls");
+    toggleBtn.addEventListener("click", () => {
+      wallsOn = !wallsOn;
+      toggleBtn.textContent = wallsOn ? "Remove walls" : "Add walls";
+    });
 
     function dist2(d1, d2) {
       const dx = d2.x - d1.x;
@@ -33,16 +65,16 @@
       return dx * dx + dy * dy;
     }
 
-    function force(d1, d2, e = 10) {
-      return G * d1.m * d2.m / (dist2(d1, d2) + e * e)
+    function force(d1, d2, G, ep = 10) {
+      return G * d1.m * d2.m / (dist2(d1, d2) + ep * ep)
     }
 
-    function updateVelocity(dt) {
+    function updateVelocity(dt, G, ep) {
       for (let i = 0; i < dots.length - 1; i++) {
         let d1 = dots[i];
         for (let j = i + 1; j < dots.length; j++) {
           let d2 = dots[j];
-          let f = force(d1, d2);
+          let f = force(d1, d2, G, ep);
           let dist = Math.sqrt(dist2(d1, d2));
           if (dist < 1e-6) continue;
           let dx = (d2.x - d1.x) / dist, 
@@ -61,11 +93,13 @@
       const y = e.clientY - rect.top;
 
       const a = Math.random() * Math.PI * 2;
+      const speed = getSpeed();
+      const mass = getMass();
       dots.push({
-        x, y, m: M,
+        x, y, m: mass,
         px: x, py: y,
-        vx: Math.cos(a) * SPEED,
-        vy: Math.sin(a) * SPEED,
+        vx: Math.cos(a) * speed,
+        vy: Math.sin(a) * speed,
         color: randColor()
       });
     });
@@ -76,7 +110,10 @@
       const dt = (now - last) / 1000;
       last = now;
 
-      updateVelocity(dt);
+      let G = getGravity();
+      let ep = getSoftening();
+
+      updateVelocity(dt, G, ep);
 
       for (let i = 0; i < dots.length; i++) {
         let d = dots[i];
@@ -84,10 +121,12 @@
         d.x += d.vx * dt;
         d.y += d.vy * dt;
 
-        if (d.x - R < 0) { d.x = R; d.vx *= -1; }
-        if (d.x + R > canvas.width) { d.x = canvas.width - R; d.vx *= -1; }
-        if (d.y - R < 0) { d.y = R; d.vy *= -1; }
-        if (d.y + R > canvas.height) { d.y = canvas.height - R; d.vy *= -1; }
+        if (wallsOn) {
+          if (d.x - R < 0) { d.x = R; d.vx *= -1; }
+          if (d.x + R > canvas.width) { d.x = canvas.width - R; d.vx *= -1; }
+          if (d.y - R < 0) { d.y = R; d.vy *= -1; }
+          if (d.y + R > canvas.height) { d.y = canvas.height - R; d.vy *= -1; }
+        }
 
         ctx.beginPath();
         ctx.arc(d.x, d.y, R, 0, Math.PI * 2);
