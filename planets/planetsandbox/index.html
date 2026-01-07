@@ -3,11 +3,13 @@
 <head>
   <meta charset="utf-8" />
   <style>
-    body { margin: 0; display: grid; place-items: center; height: 100vh; }
+    body { margin: 0; display: grid; place-items: center; min-height: 90vh; padding: 12px; }
+    p { margin: 4px 0; font: 14px system-ui, sans-serif; color: #555; }
     canvas { border: 2px solid #000; }
     .controls { display: grid; grid-template-columns: auto auto; gap: 12px 24px; }
     .controls label { text-align: right; }
-    .controls button { grid-column: 1 / -1; padding: 6px 10px; }
+    .controls button { padding: 6px 10px; }
+    .controls .buttons { grid-column: 1 / -1; display: flex; gap: 8px; justify-content: center; }
   </style>
 </head>
 <body>
@@ -21,7 +23,10 @@
     <input id="mass" type="number" value="4e16">
     <label for="softening">Softening factor </label>
     <input id="softening" type="number" value="70">
+  </div>
+  <div class="buttons">
     <button id="toggleWalls" type="button">Add walls</button>
+    <button id="clearTrails" type="button">Clear trails</button>
   </div>
 
   <script>
@@ -149,9 +154,12 @@
 
     requestAnimationFrame(step);
 
-    // Optional: press "c" to clear trails
     window.addEventListener("keydown", (e) => {
       if (e.key.toLowerCase() === "c") ctx.clearRect(0, 0, canvas.width, canvas.height);
+    });
+
+    document.getElementById("clearTrails").addEventListener("click", () => {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
     });
   </script>
 </body>
