@@ -27,6 +27,7 @@
   <div class="buttons">
     <button id="toggleWalls" type="button">Add walls</button>
     <button id="clearTrails" type="button">Clear trails</button>
+    <button id="toggleTrails" type="button">No trails</button>
   </div>
 
   <script>
@@ -34,7 +35,7 @@
     const ctx = canvas.getContext("2d");
 
     const dots = [];
-    const R = 2;
+    const R = 3;
 
     function randColor() {
       return `hsl(${Math.random() * 360}, 90%, 55%)`;
@@ -57,11 +58,17 @@
     }
 
     let wallsOn = false;
-
-    const toggleBtn = document.getElementById("toggleWalls");
-    toggleBtn.addEventListener("click", () => {
+    const toggleWalls = document.getElementById("toggleWalls");
+    toggleWalls.addEventListener("click", () => {
       wallsOn = !wallsOn;
-      toggleBtn.textContent = wallsOn ? "Remove walls" : "Add walls";
+      toggleWalls.textContent = wallsOn ? "Remove walls" : "Add walls";
+    });
+
+    let trailsOn = true;
+    const toggleTrails = document.getElementById("toggleTrails");
+    toggleTrails.addEventListener("click", () => {
+      trailsOn = !trailsOn;
+      toggleTrails.textContent = trailsOn ? "Remove trails" : "Add trails";
     });
 
     function dist2(d1, d2) {
@@ -112,6 +119,8 @@
     let last = performance.now();
 
     function step(now) {
+      if (!trailsOn) ctx.clearRect(0, 0, canvas.width, canvas.height);
+
       const dt = (now - last) / 1000;
       last = now;
 
@@ -138,17 +147,19 @@
         ctx.fillStyle = d.color;
         ctx.fill();
 
-        ctx.beginPath();
-        ctx.moveTo(d.px, d.py);
-        ctx.lineTo(d.x, d.y);
-        ctx.strokeStyle = d.color;
-        ctx.lineWidth = 5;
-        ctx.stroke();
+        if (trailsOn) {
+          ctx.beginPath();
+          ctx.moveTo(d.px, d.py);
+          ctx.lineTo(d.x, d.y);
+          ctx.strokeStyle = d.color;
+          ctx.lineWidth = 6;
+          ctx.stroke();
+        }
 
         d.px = d.x;
         d.py = d.y;
-      }
 
+      }
       requestAnimationFrame(step);
     }
 
