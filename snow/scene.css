@@ -1,0 +1,101 @@
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: linear-gradient(
+    to top,
+    DarkBlue,
+    black
+  );
+}
+
+/* ---------- Snow ---------- */
+#snow {
+  pointer-events: none;
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  overflow: hidden;
+  z-index: 2;
+}
+.snowflake {
+  position: absolute;
+  top: -10px;
+  color: #fff;
+  font-size: 1em;
+  opacity: 0.8;
+  animation: fall linear infinite;
+}
+@keyframes fall {
+  0% { transform: translateY(-10vh); }
+  100% { transform: translateY(110vh); }
+}
+
+/* ---------- Mountains ---------- */
+#mountains {
+  position: fixed;
+  inset: 0;
+  overflow: visible;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.mountain {
+  position: absolute;
+  bottom: 0;
+  width: 0;
+  height: 0;
+  border-left: 300px solid transparent;
+  border-right: 300px solid transparent;
+  border-bottom: 300px solid black;
+  transform-origin: center bottom;
+  filter: blur(0.2px);
+}
+
+/* ---------- Sky ---------- */
+#sky {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+}
+
+#stars {
+  position: absolute;
+  inset: 0;
+}
+
+.star {
+  position: absolute;
+  width: 2px;
+  height: 2px;
+  background: rgb(255, 201, 100); 
+  border-radius: 50%;
+  opacity: 0.8;
+  animation: twinkle 3.5s ease-in-out infinite;
+}
+
+@keyframes twinkle {
+  0%, 100% { opacity: 0.3; transform: scale(0.9); }
+  50%      { opacity: 1.0; transform: scale(1.2); }
+}
+
+#moon{
+  position: absolute;
+  top: 8vh;
+  right: 10vw;
+  width: 90px;
+  height: 90px;
+  border-radius: 50%;
+  background: rgba(255, 255, 230, 0.95);
+  box-shadow: 0 0 30px rgba(255, 255, 230, 0.75);
+}
+
+#moon::after{
+  content: "";
+  position: absolute;
+  top: 10px;
+  left: 18px;
+  width: 90px;
+  height: 90px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.25); 
+}

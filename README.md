@@ -25,6 +25,9 @@ A small collection of physics based 2D animations.
   Click to place bodies.
   → https://laurencewilkes.github.io/Animations/racecar/dvd/index.html
 
+- **Snow**  
+  → https://laurencewilkes.github.io/Animations/snow/index.html
+
 ---
 
 ## Planet Sandbox (browser)
@@ -89,3 +92,10 @@ The initial wave of 4 planets are evenly placed on the border of the square with
 https://laurencewilkes.github.io/Animations/racecar/dvd/index.html
 
 ---
+
+## Snow
+
+**What is it:** a mountain scene at night using standard dynamic HTML.
+
+**Link:**  
+https://laurencewilkes.github.io/Animations/snow/index.html

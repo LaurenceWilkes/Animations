@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html>
+<head>
+<link rel="stylesheet" type="text/css" href="scene.css">
+</head>
+<body>
+<div id="sky">
+  <div id="stars"></div>
+  <div id="moon"></div>
+</div>
+<div id="mountains"></div>
+<div id="snow"></div>
+<script>
+  function generateSnowflakes(count = 380) {
+    const snow = document.getElementById('snow');
+    for (let i = 0; i < count; i++) {
+      const flake = document.createElement('div');
+      flake.className = 'snowflake';
+//      flake.innerHTML = '&#10052;';
+      flake.innerHTML = '.';
+      flake.style.left = Math.random() * 100 + 'vw';
+      const near = Math.random();
+      flake.style.fontSize =  (near * 1.2 + 0.6) + 'em';
+  //    flake.style.fontSize =  (near * 1.2 + 1.6) + 'em';
+      flake.style.animationDuration = ((1 - near) * 5 + 5) + 's';
+      flake.style.animationDelay = (-Math.random() * 5) + 's';
+      snow.appendChild(flake);
+    }
+  }
+  generateSnowflakes();
+
+  function generateMountains(count = 135) {
+    const mountains = document.getElementById("mountains");
+    mountains.innerHTML = "";
+
+    const w = window.innerWidth;
+    const layerCount = 4;
+
+    const mtns = [];
+    for (let i = 0; i < count; i++) {
+      const height = 140 + Math.random() * 180;
+//      const base = 100 + Math.random() * 400;   
+      const base = height * (1 + Math.random());
+      const x = Math.random() * w;
+      mtns.push({ base, height, x });
+    }
+
+    mtns.sort((a, b) => b.height - a.height);
+
+    for (let i = 0; i < count; i++) {
+      const mtn = document.createElement("div");
+      const m = mtns[i];
+      mtn.className = "mountain";
+      mtn.style.borderLeftWidth = (m.base / 2) + "px";
+      mtn.style.borderRightWidth = (m.base / 2) + "px";
+      mtn.style.borderBottomWidth = m.height + "px";
+
+      const layer = Math.floor(layerCount * i / count);
+      const c = 25 * (layerCount - layer) / layerCount;
+      mtn.style.borderBottomColor = `rgb(${c}, ${c}, ${c})`;
+
+      mtn.style.left = (m.x - m.base / 2) + "px";
+
+      mountains.appendChild(mtn);
+    }
+  }
+
+  generateMountains();
+  window.addEventListener("resize", () => generateMountains());
+
+  function generateStars(count = 140) {
+    const stars = document.getElementById("stars");
+    stars.innerHTML = "";
+
+    for (let i = 0; i < count; i++) {
+      const s = document.createElement("div");
+      s.className = "star";
+
+      s.style.left = (Math.random() * 100) + "vw";
+      s.style.top = (Math.random() * 60) + "vh"; 
+
+      const size = 1 + Math.random() * 2.2;
+      s.style.width = size + "px";
+      s.style.height = size + "px";
+
+      s.style.animationDuration = (8 + Math.random() * 23) + "s";
+      s.style.animationDelay = (-Math.random() * 30) + "s";
+
+      s.style.opacity = (0.3 + Math.random() * 0.7);
+
+      stars.appendChild(s);
+    }
+  }
+
+  generateStars();
+  window.addEventListener("resize", () => generateStars());
+</script>
+</body>
+</html>
