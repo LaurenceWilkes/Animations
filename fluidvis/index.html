@@ -1,0 +1,388 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <style>
+    html, body {margin: 0; height: 100%; overflow: hidden; background: #000;}
+    canvas {display: block; width: 100vw; height: 100vh; touch-action: none;}
+  </style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<script>
+const canvas = document.getElementById("c");
+const ctx = canvas.getContext("2d", { alpha: false });
+
+// Parameters
+const N = 96;
+const visc = 0.00005;  // viscosity
+const iterGS = 10;
+const arrows = new URLSearchParams(window.location.search).has("arrows");
+
+const partNo = 3000;
+const resetAvg = 50;
+
+const clamp = (x, a, b) => (x < a ? a : x > b ? b : x);
+const IX = (i, j) => i + (N + 2) * j;
+
+function setBound(b, x) {
+  for (let i = 1; i <= N; i++) {
+    x[IX( 0 ,  i )] = b == 1 ? -x[IX(1, i)] : x[IX(1, i)];
+    x[IX(N+1,  i )] = b == 1 ? -x[IX(N, i)] : x[IX(N, i)];
+    x[IX( i ,  0 )] = b == 2 ? -x[IX(i, 1)] : x[IX(i, 1)];
+//    x[IX( i ,  0 )] = x[IX(i, 1)];                            // remove top boundary
+    x[IX( i , N+1)] = b == 2 ? -x[IX(i, N)] : x[IX(i, N)];
+  }
+  x[IX( 0 ,  0 )] = 0.5 * (x[IX(1,  0 )] + x[IX( 0 , 1)]);
+  x[IX( 0 , N+1)] = 0.5 * (x[IX(1, N+1)] + x[IX( 0 , N)]);
+  x[IX(N+1,  0 )] = 0.5 * (x[IX(N,  0 )] + x[IX(N+1, 1)]);
+  x[IX(N+1, N+1)] = 0.5 * (x[IX(N, N+1)] + x[IX(N+1, N)]);
+}
+
+function diffuse(b, x, x0, diff, dt) {
+  const a = dt * diff * N * N;
+  for (let k = 0; k < iterGS; k++) { // Gauss--Seidel
+    for (let i = 1; i <= N; i++) {
+      for (let j = 1; j <= N; j++) {
+        const id = IX(i, j);
+        x[id] = (x0[id] + a * (
+          x[IX(i-1, j)] + x[IX(i+1, j)] +
+          x[IX(i, j-1)] + x[IX(i, j+1)]
+        )) / (1 + 4 * a);
+      }
+    }
+    setBound(b, x);
+  }
+}
+
+function advect(b, d, d0, u, v, dt) {
+  const dt0 = dt * N;
+  for (let i = 1; i <= N; i++) {
+    for (let j = 1; j <= N; j++) {
+      const id = IX(i, j);
+      let f = i - dt0 * u[id];
+      let g = j - dt0 * v[id];
+      f = clamp(f, 0.5, N + 0.5);
+      const i0 = Math.floor(f), i1 = i0 + 1;
+      g = clamp(g, 0.5, N + 0.5);
+      const j0 = Math.floor(g), j1 = j0 + 1;
+      const s1 = f - i0, s0 = 1 - s1;
+      const t1 = g - j0, t0 = 1 - t1;
+      d[id] = s0 * (t0 * d0[IX(i0, j0)] + t1 * d0[IX(i0, j1)])
+            + s1 * (t0 * d0[IX(i1, j0)] + t1 * d0[IX(i1, j1)]);
+    }
+  }
+  setBound(b, d);
+}
+
+function project(u, v, p, div) {
+  const h = 1.0 / N;
+  for (let i = 1; i <= N; i++) {
+    for (let j = 1; j <= N; j++) {
+      div[IX(i, j)] = -0.5 * h * (
+        (u[IX(i+1, j)] - u[IX(i-1, j)]) +
+        (v[IX(i, j+1)] - v[IX(i, j-1)])
+      );
+      p[IX(i, j)] = 0;
+    }
+  }
+  setBound(0, div);
+  setBound(0, p);
+  for (let k = 0; k <= iterGS; k++) {
+    for (let i = 1; i <= N; i++) {
+      for (let j = 1; j <= N; j++) {
+        p[IX(i, j)] = (div[IX(i, j)] + p[IX(i-1, j)] + p[IX(i+1, j)]
+                                     + p[IX(i, j-1)] + p[IX(i, j+1)]) / 4;
+      }
+    }
+    setBound(0, p);
+  }
+  for (let i = 1; i <= N; i++) {
+    for (let j = 1; j <= N; j++) {
+      u[IX(i, j)] -= 0.5 * (p[IX(i+1, j)] - p[IX(i-1, j)]) / h;
+      v[IX(i, j)] -= 0.5 * (p[IX(i, j+1)] - p[IX(i, j-1)]) / h;
+    }
+  }
+  setBound(1, u);
+  setBound(2, v);
+}
+
+function velocityStep(vel, visc, dt) {
+  [vel["u0"], vel["u"]] = [vel["u"], vel["u0"]];
+  diffuse(1, vel.u, vel.u0, visc, dt);
+  [vel["v0"], vel["v"]] = [vel["v"], vel["v0"]];
+  diffuse(2, vel.v, vel.v0, visc, dt);
+  project(vel.u, vel.v, vel.u0, vel.v0);
+  [vel["u0"], vel["u"]] = [vel["u"], vel["u0"]];
+  [vel["v0"], vel["v"]] = [vel["v"], vel["v0"]];
+  advect(1, vel.u, vel.u0, vel.u0, vel.v0, dt);
+  advect(2, vel.v, vel.v0, vel.u0, vel.v0, dt);
+  project(vel.u, vel.v, vel.u0, vel.v0);
+}
+
+const S = (N + 2) * (N + 2);
+const u  = new Float32Array(S);
+const v  = new Float32Array(S);
+const u0 = new Float32Array(S);
+const v0 = new Float32Array(S);
+const vel = { u, v, u0, v0 };
+
+const parts = [];
+for (let i = 0; i < partNo; i++) {
+  const x = 0.5 + N * Math.random();
+  const y = 0.5 + N * Math.random();
+  const x0 = x, x1 = x, x2 = x, x3 = x;
+  const y0 = y, y1 = y, y2 = y, y3 = y;
+  parts.push({ x, y, x0, y0, x1, y1, x2, y2, x3, y3 });
+}
+
+function resetPart(pt) {
+  const x = 0.5 + N * Math.random();
+  const y = 0.5 + N * Math.random();
+  pt.x = x, pt.x0 = x, pt.x1 = x, pt.x2 = x, pt.x3 = x;
+  pt.y = y, pt.y0 = y, pt.y1 = y, pt.y2 = y, pt.y3 = y;
+}
+
+function updateParts(dt) {
+  const dt0 = dt * N;
+  parts.forEach((pt, i) => {
+    const reset = Math.random() < resetAvg / partNo;
+    if (reset) {resetPart(pt); return;}
+    let f = clamp(pt.x, 0.5, N + 0.5);
+    let g = clamp(pt.y, 0.5, N + 0.5);
+    const i0 = Math.floor(f), i1 = i0 + 1;
+    const j0 = Math.floor(g), j1 = j0 + 1;
+    const s1 = f - i0, s0 = 1 - s1;
+    const t1 = g - j0, t0 = 1 - t1;
+    const ui = s0 * (t0 * vel.u[IX(i0, j0)] + t1 * vel.u[IX(i0, j1)])
+             + s1 * (t0 * vel.u[IX(i1, j0)] + t1 * vel.u[IX(i1, j1)]);
+    const vi = s0 * (t0 * vel.v[IX(i0, j0)] + t1 * vel.v[IX(i0, j1)])
+             + s1 * (t0 * vel.v[IX(i1, j0)] + t1 * vel.v[IX(i1, j1)]);
+    pt.x3 = pt.x2; pt.x2 = pt.x1; pt.x1 = pt.x0; pt.x0 = pt.x;
+    pt.y3 = pt.y2; pt.y2 = pt.y1; pt.y1 = pt.y0; pt.y0 = pt.y;
+    pt.x = pt.x + dt0 * ui;
+    pt.y = pt.y + dt0 * vi;
+  });
+}
+
+// Pointer interaction
+let pmx = null, pmy = null;
+let ppmx = null, ppmy = null;
+canvas.addEventListener("pointermove", (e) => {
+  const rect = canvas.getBoundingClientRect();
+  const x = (e.clientX - rect.left) / rect.width;
+  const y = (e.clientY - rect.top) / rect.height;
+  const gx = 1 + x * (N - 1);
+  const gy = 1 + y * (N - 1);
+
+  if (pmx === null) {
+    pmx = gx; pmy = gy;
+    ppmx = gx; ppmy = gy;
+    return;
+  }
+
+  const dx = (gx - ppmx) / 2;
+  const dy = (gy - ppmy) / 2;
+  pmx = gx; pmy = gy;
+  ppmx = pmx; ppmy = pmy;
+
+  const strength = 1;
+  const r = 2; // radius
+
+  let ii = clamp(Math.floor(gx), 1, N);
+  let jj = clamp(Math.floor(gy), 1, N);
+
+  let i0 = clamp(ii - r, 1, N), i1 = clamp(ii + r, 1, N);
+  let j0 = clamp(jj - r, 1, N), j1 = clamp(jj + r, 1, N);
+
+  for (let i = i0; i <= i1; i++) {
+    for (let j = j0; j <= j1; j++) {
+      const id = IX(i, j);
+      const dist = Math.sqrt((ii - i) * (ii - i) + (jj - j) * (jj - j));
+      vel.u[id] += dx * strength * Math.exp(-2 * dist / r);
+      vel.v[id] += dy * strength * Math.exp(-2 * dist / r);
+    }
+  }
+});
+
+canvas.addEventListener("pointerdown", (e) => {
+  canvas.setPointerCapture(e.pointerId);
+  const rect = canvas.getBoundingClientRect();
+  const x = (e.clientX - rect.left) / rect.width;
+  const y = (e.clientY - rect.top) / rect.height;
+  pmx = ppmx = 1 + x * (N - 1);
+  pmy = ppmy = 1 + y * (N - 1);
+});
+
+canvas.addEventListener("pointerup", (e) => {
+  try { canvas.releasePointerCapture(e.pointerId); } catch {}
+  pmx = pmy = ppmx = ppmy = null;
+});
+
+canvas.addEventListener("pointercancel", (e) => {
+  pmx = pmy = ppmx = ppmy = null;
+});
+
+function drawArrow(ctx, x0, y0, x1, y1) {
+  const dx = x1 - x0, dy = y1 - y0;
+  const len = Math.hypot(dx, dy);
+  if (len < 1e-6) return;
+
+  const ux = dx / len, uy = dy / len;
+  const px = -uy, py = ux;
+
+  ctx.beginPath();
+  ctx.moveTo(x0, y0);
+  ctx.lineTo(x1, y1);
+  ctx.stroke();
+
+  const hx = x1 - ux * 6;
+  const hy = y1 - uy * 6;
+  ctx.beginPath();
+  ctx.moveTo(x1, y1);
+  ctx.lineTo(hx + px * 4, hy + py * 4);
+  ctx.moveTo(x1, y1);
+  ctx.lineTo(hx - px * 4, hy - py * 4);
+  ctx.stroke();
+}
+
+function gridToPx(xg, yg) {
+  const cellW = canvas.width / N;
+  const cellH = canvas.height / N;
+  return [(xg - 0.5) * cellW, (yg - 0.5) * cellH];
+}
+
+function drawTrail() {
+  ctx.save();
+  ctx.strokeStyle = "blue";
+  parts.forEach((pt, i) => {
+    const [x , y ] = gridToPx(pt.x , pt.y );
+    const [x0, y0] = gridToPx(pt.x0, pt.y0);
+    const [x1, y1] = gridToPx(pt.x1, pt.y1);
+    const [x2, y2] = gridToPx(pt.x2, pt.y2);
+    const [x3, y3] = gridToPx(pt.x3, pt.y3);
+
+//    ctx.fillRect(x, y, 1, 1);
+
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(x, y);
+    ctx.lineTo(x0, y0);
+    ctx.stroke();
+
+    ctx.lineWidth = 0.8;
+    ctx.beginPath();
+    ctx.moveTo(x0, y0);
+    ctx.lineTo(x1, y1);
+    ctx.stroke();
+
+    ctx.lineWidth = 0.6;
+    ctx.beginPath();
+    ctx.moveTo(x1, y1);
+    ctx.lineTo(x2, y2);
+    ctx.stroke();
+
+    ctx.lineWidth = 0.4;
+    ctx.beginPath();
+    ctx.moveTo(x2, y2);
+    ctx.lineTo(x3, y3);
+    ctx.stroke();
+  });
+  ctx.restore();
+}
+
+const hidden = document.createElement("canvas");
+const hiddenCtx = hidden.getContext("2d", { alpha: false });
+let img = null;
+
+function resize() {
+  const dpr = Math.min(2, window.devicePixelRatio || 1);
+  canvas.width  = Math.floor(innerWidth * dpr);
+  canvas.height = Math.floor(innerHeight * dpr);
+}
+addEventListener("resize", resize);
+resize();
+
+function draw() {
+//  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.fillStyle = "rgba(0,0,0,0.06)";
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  drawTrail();
+  if (!arrows) return;
+  const stride = 2;     // arrow frequency (lower is more)
+  const arrowLen = 100; // how long arrows look
+
+  ctx.save();
+  ctx.strokeStyle = "red";
+  ctx.lineWidth = 1;
+  ctx.globalAlpha = 0.9;
+  const cellW = canvas.width / N;
+  const cellH = canvas.height / N;
+
+  for (let j = 1; j <= N; j += stride) {
+    for (let i = 1; i <= N; i += stride) {
+      const id = IX(i, j);
+      const cx = (i - 0.5) * cellW, cy = (j - 0.5) * cellH;
+      const uu = vel.u[id] * arrowLen, vv = vel.v[id] * arrowLen;
+      drawArrow(ctx, cx, cy, cx + uu, cy + vv);
+    }
+  }
+
+  ctx.restore();
+}
+
+let next = 500 + Math.random() * 1500;
+let par1 = true, par2 = true, dist = 1, col = [1, 1, 1]; // geyser setup
+
+function resetGeyser() {
+  par1 = Math.random() < 0.5;                 // false: horizontal, true: vertical
+  par2 = Math.random() < 0.5;                 // false: far side, true: near side
+  dist = Math.floor(Math.random() * N) + 1;
+  const h = Math.random() * 6, i = h | 0, f = h - i, s = 0.85, vv = 1.0; // Random HSV colour to rgb
+  const p = vv * (1 - s), q = vv * (1 - s * f), t = vv * (1 - s * (1 - f));
+  col = [[vv, t, p], [q, vv, p], [p, vv, t], [p, q, vv], [t, p, vv], [vv, p, q]][i];
+}
+
+resetGeyser();
+
+function geyser(now) {
+  if (now < next) return;
+  if (now >= next + 3000) {
+    next = now + 500 + Math.random() * 1500;
+    resetGeyser();
+    return;
+  }
+
+  const pow = 1, vol = 155;
+  const nf = par2 ? 2 : (N - 1);
+  const sgn = par2 ? 1 : -1;
+  const jet = pow * sgn;
+
+  for (let k = -1; k <= 1; k++) {
+    const dd = clamp(dist + k, 1, N);
+    const id = par1 ? IX(dd, nf) : IX(nf, dd);
+
+    if (par1) vel.v[id] += jet;
+    else      vel.u[id] += jet;
+  }
+}
+
+let last = performance.now();
+function step(now) {
+  let dt =  (now - last) / 1000;
+  last = now;
+  dt = Math.min(dt, 1/30);
+
+  geyser(now);
+  velocityStep(vel, visc, dt);
+  updateParts(dt);
+
+  draw();
+  requestAnimationFrame(step);
+}
+requestAnimationFrame(step);
+
+</script>
+</body>
+</html>
