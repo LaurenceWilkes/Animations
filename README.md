@@ -107,9 +107,9 @@ https://laurencewilkes.github.io/Animations/snow/index.html
 
 ## Fluid Visualisation (browser)
 
-**What it is:** an interactive 2D fluid sim based on my other [GitHub project](https://github.com/LaurenceWilkes/WebFluid) (in turn based off of Jos Stam's Stable Fluids) which uses the idea from [How I built a wind map with WebGL](https://blog.mapbox.com/how-i-built-a-wind-map-with-webgl-b63022b5537f) (though not with GPU computations yet).
+**What it is:** an interactive 2D fluid sim based on my other [GitHub project](https://github.com/LaurenceWilkes/WebFluid) (in turn based off of Jos Stam's Stable Fluids) which uses the idea from [How I built a wind map with WebGL](https://blog.mapbox.com/how-i-built-a-wind-map-with-webgl-b63022b5537f) to produce the visualisation of the field (though not with GPU computations yet).
 
-**How to use**
+**How to use:**
 Use mouse or touch to interact.
 
 **Link:**  
