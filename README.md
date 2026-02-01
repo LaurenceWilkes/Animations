@@ -1,4 +1,4 @@
-# Animations Sandbox
+# Animations
 
 A small collection of physics based 2D animations.
 
