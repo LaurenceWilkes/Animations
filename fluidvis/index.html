@@ -16,11 +16,12 @@ const ctx = canvas.getContext("2d", { alpha: false });
 // Parameters
 const N = 96;
 const visc = 0.00005;  // viscosity
-const iterGS = 10;
+const iterGS = 12;
 const arrows = new URLSearchParams(window.location.search).has("arrows");
+const trailLen = 2;
 
-const partNo = 9000;
-const resetAvg = 50;
+const partNo = 5000;
+const resetAvg = 20;
 
 const clamp = (x, a, b) => (x < a ? a : x > b ? b : x);
 const IX = (i, j) => i + (N + 2) * j;
@@ -129,18 +130,20 @@ const vel = { u, v, u0, v0 };
 
 const parts = [];
 for (let i = 0; i < partNo; i++) {
-  const x = 0.5 + N * Math.random();
-  const y = 0.5 + N * Math.random();
-  const x0 = x, x1 = x, x2 = x, x3 = x;
-  const y0 = y, y1 = y, y2 = y, y3 = y;
-  parts.push({ x, y, x0, y0, x1, y1, x2, y2, x3, y3 });
+  const xval = 0.5 + N * Math.random();
+  const yval = 0.5 + N * Math.random();
+  let x = Array(trailLen).fill(xval);
+  let y = Array(trailLen).fill(yval);
+  parts.push({ x, y });
 }
 
 function resetPart(pt) {
-  const x = 0.5 + N * Math.random();
-  const y = 0.5 + N * Math.random();
-  pt.x = x, pt.x0 = x, pt.x1 = x, pt.x2 = x, pt.x3 = x;
-  pt.y = y, pt.y0 = y, pt.y1 = y, pt.y2 = y, pt.y3 = y;
+  const xval = 0.5 + N * Math.random();
+  const yval = 0.5 + N * Math.random();
+  for (let i = 0; i < trailLen; i++) {
+    (pt.x)[i] = xval;
+    (pt.y)[i] = yval;
+  }
 }
 
 function updateParts(dt) {
@@ -148,8 +151,12 @@ function updateParts(dt) {
   parts.forEach((pt, i) => {
     const reset = Math.random() < resetAvg / partNo;
     if (reset) {resetPart(pt); return;}
-    let f = clamp(pt.x, 0.5, N + 0.5);
-    let g = clamp(pt.y, 0.5, N + 0.5);
+    for (let i = trailLen - 1; i > 0; i--) {
+      pt.x[i] = pt.x[i - 1];
+      pt.y[i] = pt.y[i - 1];
+    }
+    let f = clamp(pt.x[0], 0.5, N + 0.5);
+    let g = clamp(pt.y[0], 0.5, N + 0.5);
     const i0 = Math.floor(f), i1 = i0 + 1;
     const j0 = Math.floor(g), j1 = j0 + 1;
     const s1 = f - i0, s0 = 1 - s1;
@@ -158,10 +165,8 @@ function updateParts(dt) {
              + s1 * (t0 * vel.u[IX(i1, j0)] + t1 * vel.u[IX(i1, j1)]);
     const vi = s0 * (t0 * vel.v[IX(i0, j0)] + t1 * vel.v[IX(i0, j1)])
              + s1 * (t0 * vel.v[IX(i1, j0)] + t1 * vel.v[IX(i1, j1)]);
-    pt.x3 = pt.x2; pt.x2 = pt.x1; pt.x1 = pt.x0; pt.x0 = pt.x;
-    pt.y3 = pt.y2; pt.y2 = pt.y1; pt.y1 = pt.y0; pt.y0 = pt.y;
-    pt.x = pt.x + dt0 * ui;
-    pt.y = pt.y + dt0 * vi;
+    pt.x[0] = pt.x[0] + dt0 * ui;
+    pt.y[0] = pt.y[0] + dt0 * vi;
   });
 }
 
@@ -256,44 +261,18 @@ function drawTrail() {
   ctx.save();
   ctx.strokeStyle = "blue";
   parts.forEach((pt, i) => {
-    const [x , y ] = gridToPx(pt.x , pt.y );
-    const [x0, y0] = gridToPx(pt.x0, pt.y0);
-    const [x1, y1] = gridToPx(pt.x1, pt.y1);
-    const [x2, y2] = gridToPx(pt.x2, pt.y2);
-    const [x3, y3] = gridToPx(pt.x3, pt.y3);
-
-//    ctx.fillRect(x, y, 1, 1);
-
-    ctx.lineWidth = 1;
-    ctx.beginPath();
-    ctx.moveTo(x, y);
-    ctx.lineTo(x0, y0);
-    ctx.stroke();
-
-    ctx.lineWidth = 0.8;
-    ctx.beginPath();
-    ctx.moveTo(x0, y0);
-    ctx.lineTo(x1, y1);
-    ctx.stroke();
-
-    ctx.lineWidth = 0.6;
-    ctx.beginPath();
-    ctx.moveTo(x1, y1);
-    ctx.lineTo(x2, y2);
-    ctx.stroke();
-
-    ctx.lineWidth = 0.4;
-    ctx.beginPath();
-    ctx.moveTo(x2, y2);
-    ctx.lineTo(x3, y3);
-    ctx.stroke();
+    for (let k = 0; k < trailLen - 1; k++) {
+      const [x , y ] = gridToPx(pt.x[k] , pt.y[k]);
+      const [xn, yn] = gridToPx(pt.x[k + 1], pt.y[k + 1]);
+      ctx.lineWidth = 1 - k / (trailLen - 1);
+      ctx.beginPath();
+      ctx.moveTo(x, y);
+      ctx.lineTo(xn, yn);
+      ctx.stroke();
+    }
   });
   ctx.restore();
 }
-
-const hidden = document.createElement("canvas");
-const hiddenCtx = hidden.getContext("2d", { alpha: false });
-let img = null;
 
 function resize() {
   const dpr = Math.min(2, window.devicePixelRatio || 1);
@@ -333,17 +312,12 @@ function draw() {
 }
 
 let next = 500 + Math.random() * 1500;
-let par1 = true, par2 = true, dist = 1, col = [1, 1, 1]; // geyser setup
-
+let par1 = true, par2 = true, dist = 1;
 function resetGeyser() {
   par1 = Math.random() < 0.5;                 // false: horizontal, true: vertical
   par2 = Math.random() < 0.5;                 // false: far side, true: near side
   dist = Math.floor(Math.random() * N) + 1;
-  const h = Math.random() * 6, i = h | 0, f = h - i, s = 0.85, vv = 1.0; // Random HSV colour to rgb
-  const p = vv * (1 - s), q = vv * (1 - s * f), t = vv * (1 - s * (1 - f));
-  col = [[vv, t, p], [q, vv, p], [p, vv, t], [p, q, vv], [t, p, vv], [vv, p, q]][i];
 }
-
 resetGeyser();
 
 function geyser(now) {
