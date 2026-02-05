@@ -18,7 +18,6 @@ const N = 96;
 const visc = 0.00005;  // viscosity
 const iterGS = 12;
 const arrows = new URLSearchParams(window.location.search).has("arrows");
-const trailLen = 2;
 
 const partNo = 5000;
 const resetAvg = 20;
@@ -128,35 +127,32 @@ const u0 = new Float32Array(S);
 const v0 = new Float32Array(S);
 const vel = { u, v, u0, v0 };
 
-const parts = [];
+const tx  = new Float32Array(partNo);
+const ty  = new Float32Array(partNo);
+const tx0 = new Float32Array(partNo);
+const ty0 = new Float32Array(partNo);
 for (let i = 0; i < partNo; i++) {
   const xval = 0.5 + N * Math.random();
   const yval = 0.5 + N * Math.random();
-  let x = Array(trailLen).fill(xval);
-  let y = Array(trailLen).fill(yval);
-  parts.push({ x, y });
-}
-
-function resetPart(pt) {
-  const xval = 0.5 + N * Math.random();
-  const yval = 0.5 + N * Math.random();
-  for (let i = 0; i < trailLen; i++) {
-    (pt.x)[i] = xval;
-    (pt.y)[i] = yval;
-  }
+  tx[i] = xval; tx0[i] = xval;
+  ty[i] = yval; ty0[i] = yval;
 }
 
 function updateParts(dt) {
   const dt0 = dt * N;
-  parts.forEach((pt, i) => {
+  for (let i = 0; i < partNo; i++) {
     const reset = Math.random() < resetAvg / partNo;
-    if (reset) {resetPart(pt); return;}
-    for (let i = trailLen - 1; i > 0; i--) {
-      pt.x[i] = pt.x[i - 1];
-      pt.y[i] = pt.y[i - 1];
+    if (reset) {
+      const xval = 0.5 + N * Math.random();
+      const yval = 0.5 + N * Math.random();
+      tx[i] = xval; tx0[i] = xval;
+      ty[i] = yval; ty0[i] = yval;
+      continue;
     }
-    let f = clamp(pt.x[0], 0.5, N + 0.5);
-    let g = clamp(pt.y[0], 0.5, N + 0.5);
+    tx0[i] = tx[i];
+    ty0[i] = ty[i];
+    let f = clamp(tx[i], 0.5, N + 0.5);
+    let g = clamp(ty[i], 0.5, N + 0.5);
     const i0 = Math.floor(f), i1 = i0 + 1;
     const j0 = Math.floor(g), j1 = j0 + 1;
     const s1 = f - i0, s0 = 1 - s1;
@@ -165,9 +161,9 @@ function updateParts(dt) {
              + s1 * (t0 * vel.u[IX(i1, j0)] + t1 * vel.u[IX(i1, j1)]);
     const vi = s0 * (t0 * vel.v[IX(i0, j0)] + t1 * vel.v[IX(i0, j1)])
              + s1 * (t0 * vel.v[IX(i1, j0)] + t1 * vel.v[IX(i1, j1)]);
-    pt.x[0] = pt.x[0] + dt0 * ui;
-    pt.y[0] = pt.y[0] + dt0 * vi;
-  });
+    tx[i] = tx[i] + dt0 * ui;
+    ty[i] = ty[i] + dt0 * vi;
+  }
 }
 
 // Pointer interaction
@@ -258,19 +254,23 @@ function gridToPx(xg, yg) {
 }
 
 function drawTrail() {
+  const cellW = canvas.width / N;
+  const cellH = canvas.height / N;
+
   ctx.save();
   ctx.strokeStyle = "blue";
-  parts.forEach((pt, i) => {
-    for (let k = 0; k < trailLen - 1; k++) {
-      const [x , y ] = gridToPx(pt.x[k] , pt.y[k]);
-      const [xn, yn] = gridToPx(pt.x[k + 1], pt.y[k + 1]);
-      ctx.lineWidth = 1 - k / (trailLen - 1);
-      ctx.beginPath();
-      ctx.moveTo(x, y);
-      ctx.lineTo(xn, yn);
-      ctx.stroke();
-    }
-  });
+  ctx.lineWidth = 2;
+
+  ctx.beginPath();
+  for (let i = 0; i < partNo; i++) {
+    const x  = (tx[i]  - 0.5) * cellW;
+    const y  = (ty[i]  - 0.5) * cellH;
+    const x0 = (tx0[i] - 0.5) * cellW;
+    const y0 = (ty0[i] - 0.5) * cellH;
+    ctx.moveTo(x0, y0);
+    ctx.lineTo(x, y);
+  }
+  ctx.stroke();
   ctx.restore();
 }
 
