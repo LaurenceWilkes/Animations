@@ -10,6 +10,10 @@ A small collection of physics based 2D animations.
   Click to place bodies.
   → https://laurencewilkes.github.io/Animations/planets/planetsandbox/index.html
 
+- **Wave simulation (interactive)**  
+  Click to add an impulse
+  → https://laurencewilkes.github.io/Animations/waves/index.html
+
 - **3 Body (GIF)**  
   Classic three-body gravitational motion with trails.  
   → https://laurencewilkes.github.io/Animations/planets/3body/planets.gif
@@ -55,6 +59,19 @@ A small collection of physics based 2D animations.
 - Pairwise forces use a softened inverse-square form:  
   `F ∝ (m₁ m₂) / (r² + ε²)`
 - Velocity updates are symmetric: each pair contributes equal and opposite impulses.
+
+---
+
+## Waves
+
+**What it is:** A GPU simulation of the wave equation with the intensity represented only by a reflection of the incidence of light on the surface.
+
+**How to use**
+Simply click and drag to produce an impulse
+
+**Notes / implementation details**
+- This is based of the [shallow water simulation](https://github.com/LaurenceWilkes/ShallowWater) derived from Navier--Stokes which has a slightly more complicated structure but doesn't look quite as good.
+- The simulation is performed by compute shaders on a grid, this is then linearly interpolated by the fragment shaders to produce a smooth image on the screen.
 
 ---
 
