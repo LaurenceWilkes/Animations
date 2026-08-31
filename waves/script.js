@@ -199,10 +199,10 @@ const cellShaderModule = device.createShaderModule({
 
       let lightDir = normalize(vec3f(0.3, -0.3, 0.99));
       let dotNL = dot(normDir, lightDir);
-      let diffAng = max(0, dotNL);
+//      let diffAng = max(0, dotNL);
 
       let rz = 2 * dotNL * normDir.z - lightDir.z;
-      let spec = pow(max(0, rz), 30);
+      let spec = pow(max(0, rz), 35);
 
       return vec3f(
         clamp(spec, 0, 1),
@@ -318,9 +318,8 @@ const simulationShaderModule = device.createShaderModule({
       let uD = hCur[id(i, j - 1u)];
       let uU = hCur[id(i, j + 1u)];
 
-      let lap =
-          (uR - 2.0 * uC + uL) / (p.dx * p.dx) +
-          (uU - 2.0 * uC + uD) / (p.dy * p.dy);
+      let lap = (uR - 2.0 * uC + uL) / (p.dx * p.dx) +
+                (uU - 2.0 * uC + uD) / (p.dy * p.dy);
 
       let c2dt2 = p.C * p.C * p.dt * p.dt;
 
@@ -477,7 +476,7 @@ function updateGrid() {
     colorAttachments: [{
       view: context.getCurrentTexture().createView(),
       loadOp: "clear",
-      clearValue: { r: 0, g: 0, b: 0.4, a: 1.0 },
+      clearValue: { r: 0, g: 0, b: 0.9, a: 1.0 },
       storeOp: "store",
     }]
   });
