@@ -25,13 +25,6 @@ A small collection of physics based 2D animations.
 - **12 Planets (GIF)**  
   → https://laurencewilkes.github.io/Animations/planets/oct/planets2.gif
 
-- **DVD (interactive)**  
-  Click to place bodies.
-  → https://laurencewilkes.github.io/Animations/racecar/dvd/index.html
-
-- **Snow**  
-  → https://laurencewilkes.github.io/Animations/snow/index.html
-
 - **Fluid visualisation (interactive)**  
   → https://laurencewilkes.github.io/Animations/fluidvis/index.html
 
@@ -101,24 +94,6 @@ https://laurencewilkes.github.io/Animations/planets/3body/planets.gif
 - **12 Planets:** https://laurencewilkes.github.io/Animations/planets/oct/planets2.gif
 
 The initial wave of 4 planets are evenly placed on the border of the square with the next four placed twice as far away and (for 12 planets) the next four placed three times away.
-
----
-
-## DVD (browser)
-
-**What it is:** a DVD bounce style precursor to the Planet Sandbox.
-
-**Link:**  
-https://laurencewilkes.github.io/Animations/racecar/dvd/index.html
-
----
-
-## Snow
-
-**What is it:** a mountain scene at night using standard dynamic HTML.
-
-**Link:**  
-https://laurencewilkes.github.io/Animations/snow/index.html
 
 ---
 
